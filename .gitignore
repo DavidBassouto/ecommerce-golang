@@ -29,4 +29,14 @@ go.work.sum
 
 # Editor/IDE
 # .idea/
-# .vscode/
+.vscode/
+
+# Uploads
+uploads/
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log 
