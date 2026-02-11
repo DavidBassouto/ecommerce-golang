@@ -31,7 +31,7 @@ func (s *Server) SetupRoutes() *gin.Engine {
 	router.Use(gin.Recovery())
 	router.Use(s.corsMiddleware())
 
-	//add routes
+	// add routes
 	router.GET("/health", s.healthCheck)
 
 	return router
