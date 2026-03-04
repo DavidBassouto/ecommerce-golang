@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/davidbassouto/ecommerce-golang/internal/config"
+	"github.com/davidbassouto/ecommerce-golang/internal/routes"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
@@ -33,6 +34,11 @@ func (s *Server) SetupRoutes() *gin.Engine {
 
 	// add routes
 	router.GET("/health", s.healthCheck)
+
+	api := router.Group("/api/v1")
+	routes.RegisterAuthRoutes(
+		api, s.register, s.login, s.logout, s.refreshToken,
+	)
 
 	return router
 }
