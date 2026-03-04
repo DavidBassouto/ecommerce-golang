@@ -17,7 +17,7 @@ type AuthService struct {
 	cfg *config.Config
 }
 
-func newAuthService(db *gorm.DB, cfg *config.Config) *AuthService {
+func NewAuthService(db *gorm.DB, cfg *config.Config) *AuthService {
 	return &AuthService{
 		db:  db,
 		cfg: cfg,
