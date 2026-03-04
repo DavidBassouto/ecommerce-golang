@@ -30,7 +30,7 @@ func (s *AuthService) Register(req *dto.RegisterRequest) (*dto.AuthResponse, err
 
 	var existingUser models.User
 	if err := s.db.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
-		return nil, errors.New("user not found")
+		return nil, errors.New("This email cannot be used")
 	}
 
 	// hash password
