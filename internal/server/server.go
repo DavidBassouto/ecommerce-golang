@@ -39,6 +39,7 @@ func (s *Server) SetupRoutes() *gin.Engine {
 	routes.RegisterAuthRoutes(
 		api, s.register, s.login, s.logout, s.refreshToken,
 	)
+	routes.RegisterUserRoutes(api, s.authMiddleware(), s.getProfile, s.updateProfile)
 
 	return router
 }
