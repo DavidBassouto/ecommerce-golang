@@ -4,6 +4,7 @@ package services
 import (
 	"github.com/davidbassouto/ecommerce-golang/internal/dto"
 	"github.com/davidbassouto/ecommerce-golang/internal/models"
+	"github.com/davidbassouto/ecommerce-golang/internal/utils"
 	"gorm.io/gorm"
 )
 
@@ -94,4 +95,98 @@ func (s *ProductService) UpdateCategory(id uint, req *dto.UpdateCategoryRequest)
 func (s *ProductService) DeleteCategory(id uint) error {
 	// so uma linha que ja cria a variavel Category e deleta ela via id
 	return s.db.Delete(&models.Category{}, id).Error
+}
+
+// PRODUCTS
+
+func (s *ProductService) convertToProductResponse(product *models.Product) dto.ProductResponse {
+	images := make([]dto.ProductImageResponse, len(product.Images))
+	for i := range product.Images {
+		images[i] = dto.ProductImageResponse{
+			ID:        product.Images[i].ID,
+			URL:       product.Images[i].URL,
+			AltText:   product.Images[i].AltText,
+			IsPrimary: product.Images[i].IsPrimary,
+		}
+	}
+	return dto.ProductResponse{
+		ID:          product.ID,
+		Name:        product.Name,
+		Description: product.Description,
+		Price:       product.Price,
+		Stock:       product.Stock,
+		Category: dto.CategoryResponse{
+			ID:          product.CategoryID,
+			Name:        product.Category.Name,
+			Description: product.Category.Description,
+			IsActive:    product.Category.IsActive,
+		},
+		IsActive:  product.IsActive,
+		CreatedAt: product.CreatedAt,
+		UpdatedAt: product.UpdatedAt,
+		Images:    images,
+	}
+}
+
+func (s *ProductService) CreateProduct(req *dto.CreateProductRequest) (*dto.ProductResponse, error) {
+	product := models.Product{
+		CategoryID:  req.CategoryID,
+		Name:        req.Name,
+		Description: req.Description,
+		Price:       req.Price,
+		Stock:       req.Stock,
+		SKU:         req.SKU,
+	}
+
+	if err := s.db.Create(&product).Error; err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (s *ProductService) GetProducts(page, limit int) ([]dto.ProductResponse, *utils.PaginationMeta, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+
+	offset := (page - 1) * limit
+
+	var products []models.Product
+	var total int64
+
+	// verificar qnts produtos estao ativos
+	s.db.Model(&models.Product{}).Where("is_active=?", true).Count(&total)
+
+	// usar preload para carregar sub arrays do objeto (nesse caso, categorias e images)
+	// carregar as outras classes como parte do item
+	if err := s.db.Preload("Category").Preload("Images").Where("is_active=?", true).Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+		return nil, nil, err
+	}
+
+	// transformar em uma resposta
+	// loop usando o make pra ja criar a quantidade de posições
+	// make (tipo, tamanho do slice)
+
+	response := make([]dto.ProductResponse, len(products))
+
+	// loop com for i := range slice a ser iterado
+	// cada item em products vai ser alocado a uma posicao ja criada em response
+	for i := range products {
+		response[i] = s.convertToProductResponse(&products[i])
+	}
+
+	// calculate a quantidade de paginas
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	meta := &utils.PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+	}
+	return response, meta, nil
 }
