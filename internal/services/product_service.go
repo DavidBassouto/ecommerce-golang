@@ -8,10 +8,15 @@ import (
 	"gorm.io/gorm"
 )
 
+// encapsula uma conexão com o banco de dados
+// (usando a biblioteca GORM) para realizar operações
 type ProductService struct {
 	db *gorm.DB
 }
 
+// NewProductService é um construtor que cria uma nova instância de ProductService
+// Recebe uma conexão de banco de dados (db) e retorna um ponteiro para ProductService
+// O campo db do ProductService é inicializado com a conexão recebida
 func NewProductService(db *gorm.DB) *ProductService {
 	return &ProductService{db: db}
 }
@@ -154,14 +159,17 @@ func (s *ProductService) GetProducts(page, limit int) ([]dto.ProductResponse, *u
 	}
 
 	offset := (page - 1) * limit
-
+	// cria um slice nulo (nil), e o próprio GORM se encarregará de alocar a memória necessária
+	// quando encontrar os registros no banco.
 	var products []models.Product
 	var total int64
 
 	// verificar qnts produtos estao ativos
+	// Model indica a tabela alvo (semelhante ao FROM em SQL)
 	s.db.Model(&models.Product{}).Where("is_active=?", true).Count(&total)
 
 	// usar preload para carregar sub arrays do objeto (nesse caso, categorias e images)
+	// preload e tipo um join
 	// carregar as outras classes como parte do item
 	if err := s.db.Preload("Category").Preload("Images").Where("is_active=?", true).Offset(offset).Limit(limit).Find(&products).Error; err != nil {
 		return nil, nil, err
@@ -189,4 +197,38 @@ func (s *ProductService) GetProducts(page, limit int) ([]dto.ProductResponse, *u
 		TotalPages: totalPages,
 	}
 	return response, meta, nil
+}
+
+func (s *ProductService) GetProductByID(id uint) (*dto.ProductResponse, error) {
+	var product models.Product
+	if err := s.db.Preload("Category").Preload("Images").Where("id=?", id).First(&product).Error; err != nil {
+		return nil, err
+	}
+
+	response := s.convertToProductResponse(&product)
+	return &response, nil
+
+}
+
+func (s *ProductService) UpdateProductByID(id uint, req *dto.UpdateProductRequest) (*dto.ProductResponse, error) {
+	var product models.Product
+
+	if err := s.db.First(&product, id).Error; err != nil {
+		return nil, err
+	}
+
+	product.CategoryID = req.CategoryID
+	product.Name = req.Name
+	product.Description = req.Description
+	product.Price = req.Price
+	product.Stock = req.Stock
+	if req.IsActive != nil {
+		product.IsActive = *req.IsActive
+	}
+
+	if err := s.db.Save(&product).Error; err != nil {
+		return nil, err
+	}
+
+	return s.GetProductByID(id)
 }
