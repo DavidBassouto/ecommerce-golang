@@ -45,5 +45,5 @@ func (s *UserService) UpdateProfile(userID uint, req *dto.UpdateProfileRequest) 
 		return nil, err
 	}
 
-	return s.GetProfile((userID))
+	return s.GetProfile(userID)
 }
