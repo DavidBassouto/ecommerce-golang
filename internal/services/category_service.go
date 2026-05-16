@@ -65,6 +65,19 @@ func (s *CategoryService) GetCategories() ([]dto.CategoryResponse, error) {
 	return response, nil
 }
 
+func (s *CategoryService) GetCategoryById(id uint) (*dto.CategoryResponse, error) {
+	var category models.Category
+	if err := s.db.Where("id = ?", id).First(&category).Error; err != nil {
+		return nil, err
+	}
+	return &dto.CategoryResponse{
+		ID:          category.ID,
+		Name:        category.Name,
+		Description: category.Description,
+		IsActive:    category.IsActive,
+	}, nil
+}
+
 func (s *CategoryService) UpdateCategory(id uint, req *dto.UpdateCategoryRequest) (*dto.CategoryResponse, error) {
 	var category models.Category
 	if err := s.db.First(&category, id).Error; err != nil {

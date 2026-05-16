@@ -40,6 +40,22 @@ func (s *Server) getCategories(c *gin.Context) {
 	utils.SuccessResponse(c, "Categories retrieved successfully", categories)
 }
 
+func (s *Server) getCategoryByID(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		utils.BadRequestResponse(c, "Invalid category ID", err)
+		return
+	}
+
+	categoryService := services.NewCategoryService(s.db)
+	category, err := categoryService.GetCategoryById(uint(id))
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to fetch category", err)
+		return
+	}
+	utils.SuccessResponse(c, "Category retrieved successfully", category)
+}
+
 func (s *Server) updateCategory(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
